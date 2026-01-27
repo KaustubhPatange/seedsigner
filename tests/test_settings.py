@@ -1,3 +1,4 @@
+import json
 import pytest
 from base import BaseTest
 from seedsigner.models.settings import InvalidSettingsQRData, Settings
@@ -33,6 +34,68 @@ class TestSettings(BaseTest):
         settings = Settings.get_instance()
         for settings_entry in SettingsDefinition.get_settings_entries():
             assert settings.get_value(settings_entry.attr_name) == settings_entry.default_value
+
+
+    def test_load_persistent_settings(self):
+        """ Settings should load previously saved persistent settings from disk, if any
+        exist. """
+        # Initial Settings will start with defaults
+        settings = Settings.get_instance()
+
+        # Enable persistent settings and make another change
+        settings.set_value(SettingsConstants.SETTING__PERSISTENT_SETTINGS, SettingsConstants.OPTION__ENABLED)
+
+        assert settings.get_value(SettingsConstants.SETTING__QR_DENSITY) != SettingsConstants.DENSITY__HIGH
+        settings.set_value(SettingsConstants.SETTING__QR_DENSITY, SettingsConstants.DENSITY__HIGH)
+
+        # Hold on to the settings.json content
+        settings_json = None
+        with open(Settings.SETTINGS_FILENAME) as settings_file:
+            settings_json = json.loads(settings_file.read())
+
+        # Now wipe out the Settings singleton
+        BaseTest.reset_settings()
+
+        # This also deletes settings.json, so recreate it
+        with open(Settings.SETTINGS_FILENAME, "w") as settings_file:
+            settings_file.write(json.dumps(settings_json))
+
+        # Now instantiate the Settings singleton again; it should load from disk
+        settings = Settings.get_instance()
+
+        # Persistent setting change should have survived
+        assert settings.get_value(SettingsConstants.SETTING__QR_DENSITY) == SettingsConstants.DENSITY__HIGH
+
+
+    def test_load_empty_multiselect_settings(self):
+        """ Empty multiselect settings should load defaults. """
+        # Initial Settings will start with defaults
+        settings = Settings.get_instance()
+
+        # Enable persistent settings to write settings.json to disk
+        settings.set_value(SettingsConstants.SETTING__PERSISTENT_SETTINGS, SettingsConstants.OPTION__ENABLED)
+
+        # Hold on to the settings.json content
+        settings_dict = None
+        with open(Settings.SETTINGS_FILENAME) as settings_file:
+            settings_dict = json.loads(settings_file.read())
+
+        def _verify_defaults_loaded(attr_name: str):
+            # Verify that the multiselect setting has loaded its defaults
+            settings = Settings.get_instance()
+            cur_setting_value = settings.get_value(attr_name)
+            assert cur_setting_value == SettingsDefinition.get_settings_entry(attr_name).default_value
+
+        # Alter the settings to test against various empty values
+        for empty_value in ["", ",", [], None]:
+            settings_dict[SettingsConstants.SETTING__SIG_TYPES] = empty_value
+            settings.update(settings_dict)
+            _verify_defaults_loaded(SettingsConstants.SETTING__SIG_TYPES)
+
+        # One last test: remove the multiselect setting entirely
+        del settings_dict[SettingsConstants.SETTING__SIG_TYPES]
+        settings.update(settings_dict)
+        _verify_defaults_loaded(SettingsConstants.SETTING__SIG_TYPES)
 
 
     def test_parse_settingsqr_data(self):
@@ -106,6 +169,14 @@ class TestSettings(BaseTest):
         with pytest.raises(InvalidSettingsQRData) as e:
             Settings.parse_settingsqr(settingsqr_data)
         assert "passphrase" in str(e.value)
+
+
+    def test_settingsqr_fails_empty_values(self):
+        """ SettingsQR parser should fail if a setting is empty """
+        settingsqr_data = "settings::v1 persistent=D sigs= camera=180"
+        with pytest.raises(InvalidSettingsQRData) as e:
+            Settings.parse_settingsqr(settingsqr_data)
+        assert "sigs" in str(e.value)
 
 
     def test_settingsqr_parses_line_break_separators(self):
