@@ -19,11 +19,9 @@ class DisplayDriver:
                 # TODO: For now the original ST7789 driver has to be used for 240x240.
                 # The mpy version below renders incorrectly (almost like each row of pixels
                 # is one pixel short, so the entire screen exhibits a diagonal skew).
-                from seedsigner.hardware.displays.ST7789 import ST7789
                 self.display = ST7789()
 
             elif width == 320:
-                from seedsigner.hardware.displays.st7789_mpy import ST7789
                 # Have to swap width and height; screen is natively 240x320
                 self.display = ST7789(width=height, height=width)
         
@@ -58,3 +56,13 @@ class DisplayDriver:
 
     def show_image(self, image, x_start: int = 0, y_start: int = 0):
         self.display.show_image(image, x_start, y_start)
+
+
+class ST7789:
+    def __init__(self, width = 240, height = 240):
+        self.width = width
+        self.height = height
+
+    def show_image(self, image, x, y):
+        with open('display.bmp', 'wb') as f:
+            f.write(image.tobytes())

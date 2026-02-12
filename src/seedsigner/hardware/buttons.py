@@ -1,6 +1,7 @@
 import logging
 from typing import List
-import RPi.GPIO as GPIO
+import socket
+import threading
 import time
 
 from seedsigner.models.singleton import Singleton
@@ -9,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class HardwareButtons(Singleton):
-    if GPIO.RPI_INFO['P1_REVISION'] == 3: #This indicates that we have revision 3 GPIO
+    if True: #This indicates that we have revision 3 GPIO
         logger.info("Detected 40pin GPIO (Rasbperry Pi 2 and above)")
         KEY_UP_PIN = 31
         KEY_DOWN_PIN = 35
@@ -40,18 +41,7 @@ class HardwareButtons(Singleton):
         if cls._instance is None:
             cls._instance = cls.__new__(cls)
 
-            #init GPIO
-            GPIO.setmode(GPIO.BOARD)
-            GPIO.setup(HardwareButtons.KEY_UP_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)    # Input with pull-up
-            GPIO.setup(HardwareButtons.KEY_DOWN_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Input with pull-up
-            GPIO.setup(HardwareButtons.KEY_LEFT_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Input with pull-up
-            GPIO.setup(HardwareButtons.KEY_RIGHT_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
-            GPIO.setup(HardwareButtons.KEY_PRESS_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
-            GPIO.setup(HardwareButtons.KEY1_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)      # Input with pull-up
-            GPIO.setup(HardwareButtons.KEY2_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)      # Input with pull-up
-            GPIO.setup(HardwareButtons.KEY3_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)      # Input with pull-up
-
-            cls._instance.GPIO = GPIO
+            cls._instance.GPIO = GPIO()
             cls._instance.override_ind = False
 
             # Track state over time so we can apply input delays/ignores as needed
@@ -167,7 +157,7 @@ class HardwareButtons(Singleton):
 
 # class used as short hand for static button/channel lookup values
 class HardwareButtonsConstants:
-    if GPIO.RPI_INFO['P1_REVISION'] == 3: #This indicates that we have revision 3 GPIO
+    if True: #This indicates that we have revision 3 GPIO
         KEY_UP = 31
         KEY_DOWN = 35
         KEY_LEFT = 29
@@ -203,3 +193,35 @@ class HardwareButtonsConstants:
 
     KEYS__LEFT_RIGHT_UP_DOWN = [KEY_LEFT, KEY_RIGHT, KEY_UP, KEY_DOWN]
     KEYS__ANYCLICK = [KEY_PRESS, KEY1, KEY2, KEY3]
+
+
+class GPIO:
+    LOW = 0
+    HIGH = 1
+
+    def __init__(self, socket_path="gpio.sock"):
+        self._states = {}
+        self.lock = threading.Lock()
+        self.socket_path = socket_path
+
+        self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        self.sock.connect(self.socket_path)
+
+        threading.Thread(target=self._read_loop, daemon=True).start()
+
+    def _read_loop(self):
+        f = self.sock.makefile('r')
+        while True:
+            line = f.readline()
+            if not line:
+                break
+            try:
+                pin, val = line.strip().split()
+                with self.lock:
+                    self._states[int(pin)] = int(val)
+            except Exception:
+                pass
+
+    def input(self, pin):
+        with self.lock:
+            return self._states.get(pin, self.HIGH)
