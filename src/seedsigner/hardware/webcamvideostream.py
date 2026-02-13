@@ -2,6 +2,28 @@ from threading import Thread
 import time
 import cv2
 
+def resize_and_center_crop_240(frame_bgr: np.ndarray) -> np.ndarray:
+    target = 240
+    h, w = frame_bgr.shape[:2]
+
+    # resize to 240
+    if w < h:
+        scale = target / w
+    else:
+        scale = target / h
+
+    new_w = int(w * scale)
+    new_h = int(h * scale)
+
+    resized = cv2.resize(frame_bgr, (new_w, new_h), interpolation=cv2.INTER_AREA)
+
+    # center crop
+    x1 = (new_w - target) // 2
+    y1 = (new_h - target) // 2
+
+    cropped = resized[y1:y1 + target, x1:x1 + target]
+
+    return cropped
 
 class WebcamVideoStream:
     def __init__(self, resolution=(320, 240), framerate=32, format="bgr", **kwargs):
@@ -68,4 +90,5 @@ class WebcamVideoStream:
           raise RuntimeError("Camera capture failed")
 
        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+       frame = resize_and_center_crop_240(frame)
        return frame
