@@ -23,7 +23,9 @@ class Display:
         self.root.title("SeedSigner")
 
         self.root.geometry(f"{self.width*2}x{self.height+20}+240+240")
+        self.root.resizable(False, False)
         self.root.configure(bg='orange')
+        self.root.attributes("-topmost", True)
 
         self.label=Label(self.root)
         self.label.pack()

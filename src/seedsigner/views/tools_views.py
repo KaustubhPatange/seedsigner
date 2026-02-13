@@ -5,9 +5,6 @@ import time
 
 from gettext import gettext as _
 
-from embit import bip32
-from embit.networks import NETWORKS
-
 from seedsigner.gui.components import FontAwesomeIconConstants, GUIConstants, SeedSignerIconConstants, resize_image_to_fill
 from seedsigner.gui.screens import RET_CODE__BACK_BUTTON, ButtonListScreen
 from seedsigner.gui.screens.screen import ButtonOption

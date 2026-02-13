@@ -494,7 +494,7 @@ class PSBTMathScreen(ButtonListScreen):
             # lines up properly.
             self.fee_amount = f"{self.fee_amount:10}"
         else:
-            denomination = _("lits")
+            denomination = _("sats")
             self.input_amount = f"{self.input_amount:,}"
             self.spend_amount = f"{self.spend_amount:,}"
             self.fee_amount = f"{self.fee_amount:,}"

@@ -1,5 +1,6 @@
 import io
 
+import cv2
 from gettext import gettext as _
 from PIL import Image
 
@@ -50,7 +51,7 @@ class Camera(Singleton):
             return frame
         else:
             if frame is not None:
-                return Image.fromarray(frame.astype('uint8'), 'RGB').rotate(90 + self._camera_rotation)
+                return Image.fromarray(frame.astype('uint8'), 'RGB').convert('RGBA').rotate(90 + self._camera_rotation)
         return None
 
 
