@@ -19,9 +19,6 @@ from seedsigner.models.qr_type import QRType
 from seedsigner.models.seed import Seed
 from seedsigner.models.settings import SettingsConstants
 
-from mweb.psbt import Psbt as MwebPsbt
-
-
 logger = logging.getLogger(__name__)
 
 
@@ -155,10 +152,6 @@ class DecodeQR:
                     return psbt.PSBT.parse(data)
                 except:
                     pass
-                try:
-                    return MwebPsbt.parse(data)
-                except:
-                    return None
         return None
 
 
