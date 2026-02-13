@@ -22,7 +22,7 @@ class Display:
         self.root = Tk()
         self.root.title("SeedSigner")
 
-        self.root.geometry(f"{self.width*2}x{self.height+20}+240+240")
+        self.root.geometry(f"{self.width*2}x{self.height}+240+240")
         self.root.resizable(False, False)
         self.root.configure(bg='orange')
         self.root.attributes("-topmost", True)
