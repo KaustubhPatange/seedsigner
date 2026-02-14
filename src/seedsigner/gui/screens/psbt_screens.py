@@ -624,7 +624,7 @@ class PSBTAddressDetailsScreen(ButtonListScreen):
             width=self.canvas_width - 2*GUIConstants.EDGE_PADDING,
             screen_x=GUIConstants.EDGE_PADDING,
             screen_y=btc_amount.height + GUIConstants.COMPONENT_PADDING,
-            font_size=16,
+            font_size=24,
             address=self.address,
         )
 
